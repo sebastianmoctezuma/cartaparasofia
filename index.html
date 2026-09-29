@@ -303,6 +303,14 @@
     pointer-events: none;
     -webkit-user-drag: none;
   }
+  .photo-page .num {
+    position: absolute;
+    left: 0; right: 0; bottom: 30px;
+    text-align: center;
+    font-style: italic;
+    font-size: 15px;
+    color: var(--ink-soft);
+  }
   .photo-page .frase {
     font-family: var(--script);
     font-size: 31px;
@@ -553,9 +561,13 @@
     frame.appendChild(img);
     f.appendChild(frame);
     if (fraseFoto) f.appendChild(el("p", "frase", esc(fraseFoto)));
+    const n = pages.length + 1;
+    f.dataset.num = n;
+    f.appendChild(el("div", "num", String(n)));
     return f;
   };
   const extras = () => (foto ? [photoFace()] : []);
+  const totalPages = () => pages.length + (foto ? 1 : 0);
 
   /* ---------- Armado del libro ---------- */
   let pages = [];
@@ -571,8 +583,9 @@
     if (spread) {
       // dos páginas abiertas: cada hoja tiene frente y reverso con contenido
       const faces = [coverFace(), endpaperFace(true), ...pages.map((p) => p.cloneNode(true)), ...extras()];
-      if (faces.length % 2) faces.push(blankFace());
-      faces.push(endpaperFace(false), backCoverFace());
+      // la contraportada cae justo al reverso de la última página, sin hojas vacías
+      if (faces.length % 2) faces.push(backCoverFace());
+      else faces.push(endpaperFace(false), backCoverFace());
       for (let i = 0; i < faces.length; i += 2) pairs.push([faces[i], faces[i + 1]]);
     } else {
       // una página a la vez: cada hoja muestra solo su frente
@@ -639,7 +652,7 @@
     const faces = visibleFaces();
     const nums = faces.map((f) => f.dataset.num).filter(Boolean);
     if (nums.length === 2) return `páginas ${nums[0]} y ${nums[1]}`;
-    if (nums.length === 1) return `página ${nums[0]} de ${pages.length}`;
+    if (nums.length === 1) return `página ${nums[0]} de ${totalPages()}`;
     const tag = faces.map((f) => f.dataset.label).find(Boolean);
     if (tag === "cover") return "Toca para abrir";
     if (tag === "end") return "Fin";
@@ -685,7 +698,7 @@
       // conservar el punto de lectura al cambiar de modo
       const faces = leaves.length ? visibleFaces() : [];
       const withNum = faces.find((f) => f.dataset.num);
-      const ratio = withNum ? Number(withNum.dataset.num) / pages.length : 0;
+      const ratio = withNum ? Number(withNum.dataset.num) / totalPages() : 0;
       spread = wantSpread;
       PW = size.w; PH = size.h;
       document.documentElement.style.setProperty("--pw", PW + "px");
@@ -693,7 +706,7 @@
       const key = spread ? "spread" : "single";
       pages = cache[key] || (cache[key] = paginate());
       if (ratio) {
-        const num = Math.max(1, Math.round(ratio * pages.length));
+        const num = Math.max(1, Math.round(ratio * totalPages()));
         turned = spread ? Math.floor(num / 2) + 1 : num + (dedic ? 1 : 0);
       }
       build();
