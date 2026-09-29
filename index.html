@@ -1,0 +1,749 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Para Sofía</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Parisienne&family=Lora:ital,wght@0,400..600;1,400&family=Cormorant+Garamond:ital,wght@0,500;1,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --night: oklch(0.17 0.014 12);
+    --glow: oklch(0.25 0.035 12);
+    --paper: oklch(0.972 0.009 18);
+    --paper-edge: oklch(0.9 0.015 18);
+    --ink: oklch(0.29 0.045 14);
+    --ink-soft: oklch(0.5 0.06 14);
+    --accent: oklch(0.46 0.13 12);
+    --cover: oklch(0.33 0.1 12);
+    --cover-deep: oklch(0.26 0.085 12);
+    --cover-ink: oklch(0.92 0.035 15);
+    --ui: oklch(0.82 0.02 14);
+    --ui-muted: oklch(0.68 0.02 14);
+
+    --script: "Parisienne", cursive;
+    --hand: "Lora", Georgia, serif;
+    --serif: "Cormorant Garamond", Georgia, serif;
+
+    --pw: 460px;   /* ancho lógico de una página */
+    --ph: 650px;   /* alto lógico de una página */
+    --turn: 900ms;
+    --ease-turn: cubic-bezier(0.645, 0.045, 0.355, 1);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background:
+      radial-gradient(ellipse 70% 60% at 50% 45%, var(--glow), transparent 70%),
+      var(--night);
+    color: var(--ui);
+    font-family: var(--serif);
+    min-height: 100dvh;
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .stage {
+    height: 100dvh;
+    display: grid;
+    grid-template-rows: 1fr auto;
+    justify-items: center;
+    align-items: center;
+    padding: 24px 16px max(18px, env(safe-area-inset-bottom));
+    overflow: hidden;
+  }
+
+  /* ---------- Libro ---------- */
+  .viewport {
+    position: relative;
+    cursor: pointer;
+    touch-action: pan-y;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .scaler { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+  .shift { transition: transform var(--turn) var(--ease-turn); }
+  .book {
+    position: relative;
+    height: var(--ph);
+    perspective: 3200px;
+  }
+  .leaf {
+    position: absolute;
+    top: 0;
+    width: var(--pw);
+    height: var(--ph);
+    transform-origin: left center;
+    transform-style: preserve-3d;
+    transition: transform var(--turn) var(--ease-turn);
+  }
+  .leaf.turned { transform: rotateY(-180deg); }
+  .leaf.gone { visibility: hidden; }
+  .face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    overflow: hidden;
+  }
+  .face.back { transform: rotateY(180deg); }
+
+  /* sombra que recorre la hoja mientras gira */
+  .face::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity calc(var(--turn) / 2) ease-in-out;
+  }
+  .face.front::after { background: linear-gradient(90deg, oklch(0.2 0.03 12 / 0.28), transparent 60%); }
+  .face.back::after  { background: linear-gradient(270deg, oklch(0.2 0.03 12 / 0.28), transparent 60%); }
+  .leaf.moving .face::after { opacity: 1; }
+
+  /* ---------- Papel ---------- */
+  .page {
+    position: absolute;
+    inset: 0;
+    background: var(--paper);
+    color: var(--ink);
+    display: flex;
+    flex-direction: column;
+    padding: 58px 48px 30px;
+  }
+  /* pliegue del lomo */
+  .face.front .page { box-shadow: inset 18px 0 28px -18px oklch(0.35 0.04 14 / 0.35); }
+  .face.back .page  { box-shadow: inset -18px 0 28px -18px oklch(0.35 0.04 14 / 0.35); }
+  .single .face.front .page { box-shadow: inset 10px 0 18px -12px oklch(0.35 0.04 14 / 0.3); }
+
+  .page .body { flex: 1; min-height: 0; overflow: hidden; }
+  .page .num {
+    height: 26px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    font-style: italic;
+    font-size: 15px;
+    color: var(--ink-soft);
+  }
+  .page .date {
+    text-align: right;
+    font-style: italic;
+    font-size: 17px;
+    color: var(--ink-soft);
+    margin: -18px 0 22px;
+    min-height: 1em;
+  }
+
+  .body p {
+    font-family: var(--hand);
+    font-weight: 400;
+    font-size: 19px;
+    line-height: 32px;
+    text-indent: 1.4em;
+    overflow-wrap: break-word;
+  }
+  .body p.cont { text-indent: 0; }
+  .body p.saludo {
+    text-indent: 0;
+    font-family: var(--script);
+    font-size: 30px;
+    line-height: 40px;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .body p.first { text-indent: 0; }
+  .body p.first::first-letter {
+    font-family: var(--script);
+    float: left;
+    font-size: 76px;
+    line-height: 60px;
+    padding: 4px 10px 0 0;
+    color: var(--accent);
+  }
+  .body h2 {
+    font-family: var(--script);
+    font-weight: 400;
+    font-size: 32px;
+    line-height: 42px;
+    color: var(--accent);
+    text-align: center;
+    margin: 20px 0 10px;
+  }
+  .body h2:first-child { margin-top: 0; }
+  .body p.despedida {
+    text-indent: 0;
+    text-align: right;
+    margin-top: 26px;
+    font-family: var(--script);
+    font-size: 28px;
+    line-height: 38px;
+    color: var(--accent);
+  }
+  .body p.firma {
+    text-indent: 0;
+    text-align: right;
+    font-size: 26px;
+    line-height: 40px;
+  }
+
+  /* ---------- Portada, guardas, contraportada ---------- */
+  .cover {
+    position: absolute;
+    inset: 0;
+    background:
+      repeating-linear-gradient(0deg, oklch(1 0 0 / 0.018) 0 1px, transparent 1px 3px),
+      repeating-linear-gradient(90deg, oklch(0 0 0 / 0.03) 0 1px, transparent 1px 4px),
+      linear-gradient(160deg, var(--cover), var(--cover-deep));
+    color: var(--cover-ink);
+    display: grid;
+    place-items: center;
+    text-align: center;
+  }
+  .cover::before, .cover::after {
+    content: "";
+    position: absolute;
+    border-radius: 2px;
+    pointer-events: none;
+  }
+  .cover::before { inset: 22px; border: 1px solid oklch(0.92 0.035 15 / 0.35); }
+  .cover::after  { inset: 28px; border: 1px solid oklch(0.92 0.035 15 / 0.18); }
+  .face.front .cover { box-shadow: inset 14px 0 22px -10px oklch(0 0 0 / 0.45); }
+  .face.back .cover  { box-shadow: inset -14px 0 22px -10px oklch(0 0 0 / 0.45); }
+  .cover .title {
+    font-family: var(--script);
+    font-size: 72px;
+    line-height: 1.2;
+    padding: 0 40px 6px;
+    text-wrap: balance;
+  }
+  .cover .rule {
+    width: 60px;
+    height: 1px;
+    margin: 18px auto 0;
+    background: oklch(0.92 0.035 15 / 0.5);
+  }
+  .cover .sub {
+    font-style: italic;
+    font-size: 19px;
+    margin-top: 14px;
+    color: oklch(0.92 0.035 15 / 0.78);
+  }
+  .cover .mono {
+    font-family: var(--script);
+    font-size: 64px;
+    width: 110px;
+    height: 110px;
+    display: grid;
+    place-items: center;
+    border: 1px solid oklch(0.92 0.035 15 / 0.4);
+    border-radius: 50%;
+    padding-top: 8px;
+  }
+
+  .endpaper {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 50% 50%, oklch(0.46 0.13 12 / 0.08) 1.2px, transparent 1.6px) 0 0 / 18px 18px,
+      oklch(0.95 0.014 16);
+    display: grid;
+    place-items: center;
+    padding: 70px 56px;
+    text-align: center;
+  }
+  .face.front .endpaper { box-shadow: inset 18px 0 28px -18px oklch(0.35 0.04 14 / 0.35); }
+  .face.back .endpaper  { box-shadow: inset -18px 0 28px -18px oklch(0.35 0.04 14 / 0.35); }
+  .endpaper .dedic {
+    font-family: var(--hand);
+    font-style: italic;
+    font-size: 21px;
+    line-height: 1.55;
+    color: var(--ink);
+    background: var(--paper);
+    padding: 26px 28px;
+    border-radius: 2px;
+    box-shadow: 0 1px 0 var(--paper-edge);
+    text-wrap: balance;
+  }
+  .endpaper .dedic:empty { display: none; }
+  .blank { position: absolute; inset: 0; background: var(--paper); }
+
+  /* ---------- Página de la foto ---------- */
+  .photo-page {
+    position: absolute;
+    inset: 0;
+    background: var(--paper);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 34px;
+    padding: 48px 44px;
+  }
+  .face.front .photo-page { box-shadow: inset 18px 0 28px -18px oklch(0.35 0.04 14 / 0.35); }
+  .face.back .photo-page  { box-shadow: inset -18px 0 28px -18px oklch(0.35 0.04 14 / 0.35); }
+  .print {
+    width: 76%;
+    background: oklch(0.995 0.002 18);
+    padding: 12px 12px 14px;
+    transform: rotate(-2deg);
+    box-shadow:
+      0 1px 2px oklch(0.3 0.04 14 / 0.18),
+      0 10px 24px -6px oklch(0.3 0.04 14 / 0.28);
+  }
+  .print img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+    object-position: 58% 50%;
+    pointer-events: none;
+    -webkit-user-drag: none;
+  }
+  .photo-page .frase {
+    font-family: var(--script);
+    font-size: 31px;
+    line-height: 1.3;
+    color: var(--accent);
+    text-align: center;
+    text-wrap: balance;
+    max-width: 330px;
+    padding-bottom: 4px;
+  }
+
+  /* ---------- Navegación ---------- */
+  .nav {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    padding-top: 16px;
+    min-height: 58px;
+  }
+  .nav button {
+    font: inherit;
+    font-size: 26px;
+    line-height: 1;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid oklch(0.82 0.02 14 / 0.25);
+    background: transparent;
+    color: var(--ui);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    padding-bottom: 3px;
+    transition: background-color 180ms ease-out, opacity 180ms ease-out, transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .nav button:hover:not(:disabled) { background: oklch(0.82 0.02 14 / 0.1); }
+  .nav button:active:not(:disabled) { transform: scale(0.94); }
+  .nav button:disabled { opacity: 0.25; cursor: default; }
+  .nav button:focus-visible { outline: 2px solid var(--cover-ink); outline-offset: 3px; }
+  .where {
+    min-width: 150px;
+    text-align: center;
+    font-style: italic;
+    font-size: 18px;
+    color: var(--ui-muted);
+  }
+
+  .measure { position: absolute; left: -99999px; top: 0; width: var(--pw); height: var(--ph); visibility: hidden; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .viewport { animation: arrive 900ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+    @keyframes arrive { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :root { --turn: 1ms; }
+  }
+</style>
+</head>
+<body>
+
+<!--
+  ================================================================
+  TU CARTA
+  Escribe aquí. Cada párrafo va entre <p> y </p>.
+  El libro reparte el texto en páginas solo, sin importar lo largo.
+
+  data-para          nombre en la portada
+  data-fecha         aparece en la portada y en la primera página (puede ir vacío)
+  data-dedicatoria   frase corta al abrir el libro (puede ir vacía)
+
+  Clases opcionales:
+  <p class="saludo">     el saludo del inicio ("Mi amor,")
+  <h2>                   un título para separar partes de la carta
+  <p class="despedida">  la despedida del final
+  <p class="firma">      tu nombre
+  ================================================================
+-->
+<div id="carta" hidden
+     data-para="Sofía"
+     data-fecha="28 de septiembre de 2026"
+     data-dedicatoria=""
+     data-foto="foto.jpg"
+     data-frase-foto="Ojalá pueda seguir viendo esta sonrisa por muchísimos años más.">
+
+  <p>Hola amor, vengo escribiendo esto mientras voy en el camión, estoy muy triste porque otra vez nos tuvimos que despedir y no nos veremos hasta en unas semanas, no se pq esta vez estoy muy sentimental y senti muy feo comparado a otras veces el tener que volver a estar a distancia, sentí como desesperación, se pasaron muy rápido los 3 días, aunque fue poco tiempo y no tuvimos tiempo para nosotros dos solos yo lo disfrute mucho porque te extrañaba un chingo, cada vez que nos vemos mas me doy cuenta de lo mucho que te amo, no se si te lo he dicho, pero a mi me gusta sentarme y ver a mi alrededor aunque tenga mi cara de que huele a pedo, me da tranquilidad estar asi y el sabado que estabas bailando y yo te veía sentado sentí muy bonito verte feliz verte haciendo algo que yo se que te gusta mucho, tambien cuando disque intente bailar contigo senti muy bonito poder hacer algo que se que a ti te gusta aunque este bien tieso, tu sonrisa es muy unica y verte asi es de las cosas que mas quiero en este mundo, en unos meses ya casi cumplimos 2 años de conocernos y quería decirte que este año y medio que hemos compartido han sido los mejores años que he vivido, he tenido muchas experiencias nuevas y emociones muy bonitas contigo, muchos aprendizajes de cosas que hemos vivido, me gusta mucho verte sonreir y verte feliz, hacerte reir, olerte, tambien conocerte me ha hecho una mejor persona, indirectamente me haz hecho madurar mas rapido y queria agradecerte por eso, he empezado a ser un poco mas expresivo ( aunque no lo siga siendo tanto) siento que si he cambiado eso a comparacion de cuando nos conocimos y pues hay cosas que hago contigo que yo nunca pense que podria hacer con alguien, te tengo mucha confianza aunque a veces sea dificil estar a distancia, nunca me voy a rendir por algun dia poder estar juntos sin que la distancia nos afecte, y yo se que tu igual siempre pones lo mejor de tu parte tambien, las relaciones no son perfectas, y obviamente nosotros tampoco lo somos.</p>
+
+  <p>Hemos tenido momentos difíciles, discusiones, diferencias y cosas que nos han dolido, pero siento que también todo eso nos ha enseñado a conocernos mejor y a crecer juntos. Para mí amar a alguien no es que todo siempre vaya a estar bien, yo lo veo más como seguir eligiendo estar con esa persona aunque las cosas se pongan difíciles. y pues estamos jovenes nos falta mucho por aprender y vivir, pero entre todo eso yo te quiero a ti y quiero seguir aprendiendo contigo, seguir creciendo juntos</p>
+
+  <p>Una mujer como tú se conoce una sola vez en la vida. Me siento muy afortunado de que seamos novios y de haber tenido la suerte de que estuvieras ahí ese día. Y también de que no me haya dado tanto culo irte a hablar :v. Alch ni sé cómo le hice para cotorrearte así, pero le agradezco un chingo a mi yo del pasado por haber ido y no haberse quedado con las ganas. Quién sabe cómo sería mi vida ahorita si no te hubiera ido a hablar, pero estoy seguro de que no sería mejor que la realidad que vivo ahorita, porque en esta te tengo a ti.</p>
+
+  <p>Y creo que por eso hoy me dolio tanto despedirme de ti, porque mientras más tiempo pasa más me acostumbro a tenerte en mi vida y más difícil se me hace volver a estar lejos de ti. Cuando estoy contigo siento que todo es más fácil y que puedo simplemente estar tranquilo y disfrutar el momento. Estos 3 días se me fueron en putiza y cuando me di cuenta ya estábamos otra vez despidiéndonos.</p>
+
+  <p>A veces me siento triste que por la distancia no podamos hacer cosas tan simples como vernos un rato porque sí, ir a comer una crepa, estar acostados sin hacer nada , no poder llevarte al cine en un día random. Una de las cosas que mas quiero para nosotros es que algún día recordemos esta etapa y saber que a pesar de todo esto pudimos seguir juntos, aunque se escuche dificil, yo estoy seguro de que podemos lograrlo.</p>
+
+  <p>También quiero que sepas que no solamente te amo por ser mi novia. Te amo por la persona que eres, por cómo eres conmigo, porque me haces sentir muy especial y afortunado, por todas tus pequeñas formas de demostrarme que me quieres y hasta por esas cosas tuyas que probablemente tú ni siquiera notas pero que yo ya conozco y me doy cuenta. Quiero estar cuando te vaya bien, cuando cumplas tus metas, cuando estés feliz, pero también cuando las cosas estén dlv y necesites a alguien contigo.</p>
+
+  <p>Y pues nada mas amor, me siento muy triste pero quería escribirte todo esto porque intente decirtelo pero no encontraba el momento y ya no podia aguantar mas en decirtelo. Te amo mucho y gracias por estos casi 2 años desde que llegaste a mi vida. Ojala sean muchos muchos mas y siempre seas mi tilina</p>
+</div>
+
+<main class="stage">
+  <div class="viewport" id="viewport" role="region" aria-roledescription="libro" aria-label="Carta">
+    <div class="scaler" id="scaler">
+      <div class="shift" id="shift">
+        <div class="book" id="book"></div>
+      </div>
+    </div>
+  </div>
+  <nav class="nav" aria-label="Pasar páginas">
+    <button type="button" id="prev" aria-label="Página anterior">‹</button>
+    <span class="where" id="where" aria-live="polite"></span>
+    <button type="button" id="next" aria-label="Página siguiente">›</button>
+  </nav>
+</main>
+
+<script>
+(() => {
+  // tamaño lógico de la página: dos páginas abiertas en pantallas anchas, una más alta en celular
+  const SIZES = { spread: { w: 460, h: 650 }, single: { w: 380, h: 640 } };
+  let PW = SIZES.spread.w, PH = SIZES.spread.h;
+  const cache = {};
+  const src = document.getElementById("carta");
+  const book = document.getElementById("book");
+  const shift = document.getElementById("shift");
+  const scaler = document.getElementById("scaler");
+  const viewport = document.getElementById("viewport");
+  const where = document.getElementById("where");
+  const prevBtn = document.getElementById("prev");
+  const nextBtn = document.getElementById("next");
+
+  const para = (src.dataset.para || "").trim();
+  const fecha = (src.dataset.fecha || "").trim();
+  const dedic = (src.dataset.dedicatoria || "").trim();
+  const foto = (src.dataset.foto || "").trim();
+  const fraseFoto = (src.dataset.fraseFoto || "").trim();
+  document.title = para ? `Para ${para}` : "Una carta";
+  viewport.setAttribute("aria-label", document.title);
+
+  const el = (tag, cls, html) => {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (html != null) n.innerHTML = html;
+    return n;
+  };
+  const esc = (t) => t.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  /* ---------- Paginación: reparte la carta en páginas ---------- */
+  function paginate() {
+    const measure = el("div", "measure");
+    document.body.appendChild(measure);
+    const pages = [];
+    let body;
+
+    const newPage = () => {
+      const n = pages.length + 1;
+      const page = el("div", "page");
+      page.dataset.num = n;
+      if (n === 1) page.appendChild(el("div", "date", esc(fecha)));
+      const prevBody = body;
+      body = el("div", "body");
+      page.appendChild(body);
+      page.appendChild(el("div", "num", String(n)));
+      measure.appendChild(page);
+      pages.push(page);
+      // un título nunca se queda solo al final de una página
+      if (prevBody && prevBody.lastElementChild && prevBody.lastElementChild.tagName === "H2") {
+        body.appendChild(prevBody.lastElementChild);
+      }
+    };
+    const overflows = () => body.scrollHeight > body.clientHeight + 1;
+
+    newPage();
+    const blocks = [...src.children].filter((n) => /^(P|H2)$/.test(n.tagName));
+    let firstMarked = false;
+
+    for (const original of blocks) {
+      let block = original.cloneNode(true);
+      if (!firstMarked && block.tagName === "P" && !block.className) {
+        block.classList.add("first");
+        firstMarked = true;
+      }
+      body.appendChild(block);
+      if (!overflows()) continue;
+
+      // si es texto simple se parte por palabras; si no, pasa entero a la siguiente página
+      const splittable = block.tagName === "P" && block.children.length === 0;
+      if (!splittable) {
+        body.removeChild(block);
+        newPage();
+        body.appendChild(block);
+        continue;
+      }
+
+      let words = block.textContent.trim().split(/\s+/);
+      while (words.length) {
+        let lo = 0, hi = words.length;
+        while (lo < hi) {
+          const mid = Math.ceil((lo + hi) / 2);
+          block.textContent = words.slice(0, mid).join(" ");
+          if (overflows()) hi = mid - 1; else lo = mid;
+        }
+        if (lo === words.length) { block.textContent = words.join(" "); break; }
+        if (lo === 0) body.removeChild(block);
+        else block.textContent = words.slice(0, lo).join(" ");
+        words = words.slice(lo);
+        newPage();
+        const rest = block.cloneNode(false);
+        if (lo > 0) { rest.classList.remove("first"); rest.classList.add("cont"); }
+        block = rest;
+        block.textContent = words.join(" ");
+        body.appendChild(block);
+        if (!overflows()) break;
+      }
+    }
+
+    measure.remove();
+    return pages;
+  }
+
+  /* ---------- Caras especiales ---------- */
+  const coverFace = () => {
+    const c = el("div", "cover");
+    const inner = el("div");
+    inner.appendChild(el("div", "title", esc(para ? `Para ${para}` : "Para ti")));
+    if (fecha) { inner.appendChild(el("div", "rule")); inner.appendChild(el("div", "sub", esc(fecha))); }
+    c.appendChild(inner);
+    c.dataset.label = "cover";
+    return c;
+  };
+  const backCoverFace = () => {
+    const c = el("div", "cover");
+    c.appendChild(el("div", "mono", esc((para || "♥").charAt(0))));
+    c.dataset.label = "end";
+    return c;
+  };
+  const endpaperFace = (withDedic) => {
+    const e = el("div", "endpaper");
+    if (withDedic) e.appendChild(el("div", "dedic", esc(dedic)));
+    return e;
+  };
+  const blankFace = () => el("div", "blank");
+  const photoFace = () => {
+    const f = el("div", "photo-page");
+    const frame = el("div", "print");
+    const img = el("img");
+    img.src = foto;
+    img.alt = fraseFoto || "Foto";
+    img.decoding = "async";
+    frame.appendChild(img);
+    f.appendChild(frame);
+    if (fraseFoto) f.appendChild(el("p", "frase", esc(fraseFoto)));
+    return f;
+  };
+  const extras = () => (foto ? [photoFace()] : []);
+
+  /* ---------- Armado del libro ---------- */
+  let pages = [];
+  let leaves = [];
+  let turned = 0;
+  let spread = true;
+  const inFlight = new Set();
+  const maxTurn = () => (spread ? leaves.length : leaves.length - 1);
+
+  function build() {
+    book.innerHTML = "";
+    const pairs = [];
+    if (spread) {
+      // dos páginas abiertas: cada hoja tiene frente y reverso con contenido
+      const faces = [coverFace(), endpaperFace(true), ...pages.map((p) => p.cloneNode(true)), ...extras()];
+      if (faces.length % 2) faces.push(blankFace());
+      faces.push(endpaperFace(false), backCoverFace());
+      for (let i = 0; i < faces.length; i += 2) pairs.push([faces[i], faces[i + 1]]);
+    } else {
+      // una página a la vez: cada hoja muestra solo su frente
+      const fronts = [coverFace()];
+      if (dedic) fronts.push(endpaperFace(true));
+      fronts.push(...pages.map((p) => p.cloneNode(true)), ...extras(), backCoverFace());
+      for (const f of fronts) pairs.push([f, blankFace()]);
+    }
+
+    book.style.width = (spread ? PW * 2 : PW) + "px";
+    book.classList.toggle("single", !spread);
+    leaves = pairs.map(([front, back]) => {
+      const leaf = el("div", "leaf");
+      leaf.style.left = (spread ? PW : 0) + "px";
+      const f = el("div", "face front"); f.appendChild(front);
+      const b = el("div", "face back"); b.appendChild(back);
+      leaf.append(f, b);
+      leaf.style.transition = "none";
+      book.appendChild(leaf);
+      return leaf;
+    });
+    turned = Math.max(0, Math.min(turned, maxTurn()));
+    render(true);
+    book.offsetWidth;
+    leaves.forEach((l) => { l.style.transition = ""; });
+  }
+
+  function render(instant) {
+    const L = leaves.length;
+    leaves.forEach((leaf, i) => {
+      const isTurned = i < turned;
+      leaf.classList.toggle("turned", isTurned);
+      leaf.style.zIndex = inFlight.has(leaf) ? 2 * L + 1 : (isTurned ? i + 1 : 2 * L - i);
+      if (!spread) leaf.classList.toggle("gone", isTurned && !inFlight.has(leaf));
+    });
+
+    // el libro cerrado queda centrado en escritorio
+    let x = 0;
+    if (spread && turned === 0) x = -PW / 2;
+    if (spread && turned === L) x = PW / 2;
+    if (instant) {
+      shift.style.transition = "none";
+      shift.style.transform = `translateX(${x}px)`;
+      shift.offsetWidth;
+      shift.style.transition = "";
+    } else {
+      shift.style.transform = `translateX(${x}px)`;
+    }
+
+    prevBtn.disabled = turned === 0;
+    nextBtn.disabled = turned >= maxTurn();
+    where.textContent = label();
+  }
+
+  function visibleFaces() {
+    if (!spread) return [leaves[turned].querySelector(".front").firstChild];
+    const out = [];
+    if (turned > 0) out.push(leaves[turned - 1].querySelector(".back").firstChild);
+    if (turned < leaves.length) out.push(leaves[turned].querySelector(".front").firstChild);
+    return out;
+  }
+
+  function label() {
+    const faces = visibleFaces();
+    const nums = faces.map((f) => f.dataset.num).filter(Boolean);
+    if (nums.length === 2) return `páginas ${nums[0]} y ${nums[1]}`;
+    if (nums.length === 1) return `página ${nums[0]} de ${pages.length}`;
+    const tag = faces.map((f) => f.dataset.label).find(Boolean);
+    if (tag === "cover") return "Toca para abrir";
+    if (tag === "end") return "Fin";
+    return "";
+  }
+
+  function go(dir) {
+    const target = turned + dir;
+    if (target < 0 || target > maxTurn()) return;
+    const leaf = dir > 0 ? leaves[turned] : leaves[turned - 1];
+    inFlight.add(leaf);
+    leaf.classList.remove("gone");
+    leaf.classList.add("moving");
+    turned = target;
+    requestAnimationFrame(() => render(false));
+    let t;
+    const done = (e) => {
+      if (e && (e.target !== leaf || e.propertyName !== "transform")) return;
+      leaf.removeEventListener("transitionend", done);
+      clearTimeout(t);
+      inFlight.delete(leaf);
+      leaf.classList.remove("moving");
+      render(true);
+    };
+    t = setTimeout(done, 1400);
+    leaf.addEventListener("transitionend", done);
+  }
+
+  /* ---------- Tamaño y modo (dos páginas o una) ---------- */
+  function layout() {
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const wantSpread = vw >= 820 && vw > vh * 1.05;
+    const availW = vw - 32;
+    const availH = vh - 24 - 18 - 74;
+    const size = SIZES[wantSpread ? "spread" : "single"];
+    const bookW = wantSpread ? size.w * 2 : size.w;
+    const s = Math.min(availW / bookW, availH / size.h, wantSpread ? 1.35 : 1.6);
+    viewport.style.width = bookW * s + "px";
+    viewport.style.height = size.h * s + "px";
+    scaler.style.transform = `scale(${s})`;
+
+    if (wantSpread !== spread || !leaves.length) {
+      // conservar el punto de lectura al cambiar de modo
+      const faces = leaves.length ? visibleFaces() : [];
+      const withNum = faces.find((f) => f.dataset.num);
+      const ratio = withNum ? Number(withNum.dataset.num) / pages.length : 0;
+      spread = wantSpread;
+      PW = size.w; PH = size.h;
+      document.documentElement.style.setProperty("--pw", PW + "px");
+      document.documentElement.style.setProperty("--ph", PH + "px");
+      const key = spread ? "spread" : "single";
+      pages = cache[key] || (cache[key] = paginate());
+      if (ratio) {
+        const num = Math.max(1, Math.round(ratio * pages.length));
+        turned = spread ? Math.floor(num / 2) + 1 : num + (dedic ? 1 : 0);
+      }
+      build();
+    }
+  }
+
+  /* ---------- Clic, toque, deslizar y teclado ---------- */
+  let downX = null, swiped = false;
+  viewport.addEventListener("pointerdown", (e) => { downX = e.clientX; swiped = false; });
+  viewport.addEventListener("pointerup", (e) => {
+    if (downX == null) return;
+    const dx = e.clientX - downX;
+    downX = null;
+    if (Math.abs(dx) > 40) { swiped = true; go(dx < 0 ? 1 : -1); }
+  });
+  viewport.addEventListener("click", (e) => {
+    if (swiped) return;
+    const r = viewport.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width;
+    if (spread) {
+      if (turned === 0) return go(1);
+      if (turned === leaves.length) return go(-1);
+      go(x >= 0.5 ? 1 : -1);
+    } else {
+      go(x >= 0.3 ? 1 : -1);
+    }
+  });
+  prevBtn.addEventListener("click", () => go(-1));
+  nextBtn.addEventListener("click", () => go(1));
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowRight" || e.key === "PageDown") { e.preventDefault(); go(1); }
+    if (e.key === "ArrowLeft" || e.key === "PageUp") { e.preventDefault(); go(-1); }
+  });
+  let rt;
+  window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(layout, 120); });
+
+  const start = () => { leaves = []; layout(); };
+  // la carta está oculta, así que las fuentes se piden a mano antes de medir
+  const fontsReady = document.fonts
+    ? Promise.all([
+        document.fonts.load('400 19px "Lora"', "Sofía"),
+        document.fonts.load('30px "Parisienne"', "Sofía"),
+        document.fonts.load('italic 500 17px "Cormorant Garamond"', "Sofía"),
+        document.fonts.load('500 17px "Cormorant Garamond"', "Sofía"),
+      ]).catch(() => {})
+    : Promise.resolve();
+  const timeout = new Promise((r) => setTimeout(r, 3000));
+  if (foto) { const pre = new Image(); pre.src = foto; }
+  Promise.race([fontsReady, timeout]).then(start);
+})();
+</script>
+</body>
+</html>
